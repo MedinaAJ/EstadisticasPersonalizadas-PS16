@@ -32,7 +32,8 @@
 					</select>
 				</div>
 				<div class="row" style="padding: 15px; margin-left: 50px;">
-					<p>El producto es de tipo: <strong>{$tipo_producto}</strong></p>
+					<p>El producto es de tipo:</p>
+					<p style="font-size: 37px;"><strong>{$tipo_producto}</strong></p>
 				</div>
 				{/if}
 			{/if}
@@ -48,7 +49,7 @@
 			</div>
 			<div class="row">
 				<label class="switch" style="width: 61px; margin-left: 21px;">
-				  <input type="checkbox" id="checkCompare" onclick="prepararComparacion()" name="isCompare">
+				  <input type="checkbox" id="checkCompare" onclick="prepararComparacion()" name="isCompare" {if $comparar==1}Checked{/if}>
 				  <span class="slider round"></span>
 				</label>
 				<p style="
@@ -60,7 +61,10 @@
 			
 			
 			<div id="fechasCompare" class="row" style="display: none;">
-				<p>Checkbox is CHECKED!</p>
+				<div class="alert alert-danger" role="alert" style="width: 70%; margin-left: 6px; margin-bottom: -16px; margin-top: 8px;">
+					<h4 class="alert-heading">OJO!!</h4>
+					<p>En el diagrama de barras solo se mostraran los atributos que se hayan vendido en las fechas indicadas arriba.</p>
+				</div>
 				
 				<div class="row" style="padding: 20px;">
 					<p><strong>Fechas Inicio Comparada</strong></p>
@@ -80,12 +84,12 @@
 						<h3>El producto al que quieres acceder no existe</h3>
 					{else}
 						{if $estadisticas_calculadas == 1}	
-							<div class="alert alert-success" role="alert">
+							<div class="alert alert-success" role="alert" style="width: 70%; margin-left: -15px;">
 							  <h4 class="alert-heading">Existen estadisticas!</h4>
 							  <p>Si cambias de atributo vuelve a pulsar el boton.</p>
 							</div>
 						{else}
-							<div class="alert alert-danger" role="alert">
+							<div class="alert alert-danger" role="alert" style="width: 70%; margin-left: -15px;">
 							  <h4 class="alert-heading">No hay estadisticas disponibles...</h4>
 							  <p>No hay estadisticas disponibles para este producto.</p>
 							  <hr>
@@ -102,7 +106,7 @@
 		<h5 style="float: right;">Diseñado por Alejandro Medina</h5>
 	</form>
 </div>
-	{if $estadisticas_calculadas == 1}	
+	{if $estadisticas_calculadas == 1 && $comparar!=1}	
 	<div class="panel" style="border-radius: 17px; background: #ffff;">
 		<div class="panel-heading" style="border-bottom: solid 1px #585A69;">
 			<i class="icon-ok"></i>
@@ -130,6 +134,57 @@
 			<canvas id="densityChart" width="600" height="400"></canvas>
 		</div>
 	</div>
+	
+	{elseif $estadisticas_calculadas == 1 && $comparar==1}	
+	<div class="panel" style="border-radius: 17px; background: #ffff;">
+		<div class="panel-heading" style="border-bottom: solid 1px #585A69;">
+			<i class="icon-ok"></i>
+			<span style="font-size: 14px; text-transform: uppercase;">resultados</span>
+		</div>
+		<div class="col-md-6">
+			<table class="table table-striped" style="margin: auto; margin-top: 29px;">
+						  <thead>
+							<tr>
+							  <th scope="col" style="text-align: right;">Cantidad</th>
+							  <th scope="col">Atributo</th>
+							</tr>
+						  </thead>
+						  <tbody>
+							  {foreach item=elemento from=$estadisticas}
+									{assign var="elemento_split" value="--"|explode:$elemento}
+									<tr>
+										<td style="text-align: right;">{$elemento_split[0]}</td>
+										<td>{$elemento_split[1]}</td>
+									</tr>
+							  {/foreach}
+						  </tbody>
+			</table>
+		</div>
+		<div class="col-md-6">
+			<table class="table table-striped" style="margin: auto; margin-top: 29px;">
+						  <thead>
+							<tr>
+							  <th scope="col" style="text-align: right;">Cantidad Comparar</th>
+							  <th scope="col">Atributo</th>
+							</tr>
+						  </thead>
+						  <tbody>
+							  {foreach item=elemento from=$estadisticas_comparar}
+									{assign var="elemento_split" value="--"|explode:$elemento}
+									<tr>
+										<td style="text-align: right;">{$elemento_split[0]}</td>
+										<td>{$elemento_split[1]}</td>
+									</tr>
+							  {/foreach}
+						  </tbody>
+			</table>
+		</div>
+	
+		<div style="margin:auto; width: 85%; margin-top: 29px;">
+			<canvas id="densityChart" width="600" height="400"></canvas>
+		</div>
+	</div>
+	
 	{/if}
 	
 	
@@ -137,7 +192,7 @@
 	
 
 
-{if $estadisticas_calculadas == 1}	
+{if $estadisticas_calculadas == 1 && $comparar!=1}	
 
 	<script>
 
@@ -188,25 +243,57 @@
 	});
 
 	</script>
-
-<style>
-table {
-  border-collapse: collapse;
-  width: 60% !important;
-}
-
-th, td {
-  text-align: left;
-  padding: 8px;
-}
-
-th {
-  background-color: #4CAF50;
-  color: white;
-}
-</style>
-
 {/if}
+{if $estadisticas_calculadas == 1 && $comparar==1}	
+<script>
+	var densityCanvas = document.getElementById("densityChart");
+
+	Chart.defaults.global.defaultFontFamily = "Lato";
+	Chart.defaults.global.defaultFontSize = 18;
+
+	var densityData = {
+	  label: 'Unidades Vendidas',
+	  data: [{$valores_estadistica}],
+	  backgroundColor: 'rgba(0, 99, 132, 0.6)',
+	  borderWidth: 0,
+	  yAxisID: "y-axis-density"
+	};
+
+	var gravityData = {
+	  label: 'Unidades Vendidas Comparadas',
+	  data: [{$valores_estadistica_comparar_grafico}],
+	  backgroundColor: 'rgba(99, 132, 0, 0.6)',
+	  borderWidth: 0,
+	  yAxisID: "y-axis-gravity"
+	};
+
+	var planetData = {
+	  labels: [{$elementos_estadistica}],
+	  datasets: [densityData, gravityData]
+	};
+
+	var chartOptions = {
+	  scales: {
+		xAxes: [{
+		  barPercentage: 1,
+		  categoryPercentage: 0.6
+		}],
+		yAxes: [{
+		  id: "y-axis-density"
+		}, {
+		  id: "y-axis-gravity"
+		}]
+	  }
+	};
+
+	var barChart = new Chart(densityCanvas, {
+	  type: 'bar',
+	  data: planetData,
+	  options: chartOptions
+	});
+</script>
+{/if}
+
 <style>
 .switch {
   position: relative;
@@ -283,6 +370,17 @@ input:checked + .slider:before {
 		text.style.display = "none";
 	  }
 	}
+	
+	  var checkBox = document.getElementById("checkCompare");
+	  // Get the output text
+	  var text = document.getElementById("fechasCompare");
+
+	  // If the checkbox is checked, display the output text
+	  if (checkBox.checked == true){
+		text.style.display = "block";
+	  } else {
+		text.style.display = "none";
+	 }
 </script>
 
 <!-- end minicskeleton admin page -->

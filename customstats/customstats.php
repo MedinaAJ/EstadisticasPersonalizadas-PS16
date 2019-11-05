@@ -142,6 +142,13 @@ o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND 
 		
 		if(!empty(Tools::getValue('isCompare'))){
 			$comparacion = true;
+			
+			if(!empty(Tools::getValue('fechaInicioC'))){
+				$fecha_inicio_comp = Tools::getValue('fechaInicioC');
+			}
+			if(!empty(Tools::getValue('fechaFinC'))){
+				$fecha_fin_comp = Tools::getValue('fechaFinC');
+			}
 		}
 		
 		
@@ -194,6 +201,9 @@ o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND 
 					$estadisticas = $this->isMegaproduct($id_producto, $fecha_inicio, $fecha_fin);
 					$texto_boton = 'Sacar Estadisticas';
 					$estadisticas_calculadas = true;
+					if($comparacion){
+						$estadisticas_comparar = $this->isMegaproduct($id_producto, $fecha_inicio_comp, $fecha_fin_comp);
+					}
 				}else{
 					$tipo_producto = "Prestashop";
 					$selector_producto_string = $this->getPsSelector($id_producto);
@@ -201,6 +211,9 @@ o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND 
 					$estadisticas = $this->isPrestashop($id_producto, $fecha_inicio, $fecha_fin);
 					$texto_boton = 'Sacar Estadisticas';
 					$estadisticas_calculadas = true;
+					if($comparacion){
+						$estadisticas_comparar = $this->isPrestashop($id_producto, $fecha_inicio_comp, $fecha_fin_comp);
+					}
 				}
 			}else{
 				$debug = 'No se ha encontrado ningun producto con ese ID';
@@ -213,40 +226,90 @@ o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND 
 			}
 		}
 		
+		/*
+		*	Primero se sacan los valores con formato Valor--Nombre y despues se separa en dos vectores. 
+		*	Se hace primero con los comparados en caso de que haya y despues con las estadisticas actuales.
+		*	Para que queden cuadrada cada medida con la correspondiente, se recontruye el array elementos_estadistica_comparar en otro distinto para el grafico
+		*/
+		
+		$valores_estadistica_comparar = '';
+		$elementos_estadistica_comparar = '';
+		$total_comparar = 0;
+		if($comparacion && $estadisticas_calculadas){
+			foreach($estadisticas_comparar as $elemento){ 
+				$elemento_split = explode("--", $elemento);
+				$valores_estadistica_comparar .= $elemento_split[0].",";
+				$elementos_estadistica_comparar .= '"'.$elemento_split[1].'",';
+				$total_comparar = $total_comparar + (int)$elemento_split[0];
+			}
+			array_push($estadisticas_comparar, $total_comparar."--Total");
+			
+			$valores_estadistica_comparar = substr($valores_estadistica_comparar,0,strlen($valores_estadistica_comparar)-1);
+			$elementos_estadistica_comparar = substr($elementos_estadistica_comparar,0,strlen($elementos_estadistica_comparar)-1);
+		}
+		
+		$valores_estadistica_comparar_grafico = '';
+		
 		$valores_estadistica = '';
 		$elementos_estadistica = '';
 		$total = 0;
+		
+		$aux = '';
+						
+		$encontrado = false;
+		$indice_aux = 0;
 		if($estadisticas_calculadas){
 			foreach($estadisticas as $elemento){ 
 				$elemento_split = explode("--", $elemento);
 				$valores_estadistica .= $elemento_split[0].",";
 				$elementos_estadistica .= '"'.$elemento_split[1].'",';
+				$aux = $elemento_split[1];
 				$total = $total + (int)$elemento_split[0];
+				if($comparacion){
+					$indice = 0;
+					foreach(explode(",", $elementos_estadistica_comparar) as $nombre_comparar){
+						if(str_replace('"', '', $nombre_comparar) == str_replace('"', '', $aux)){
+							$encontrado = true;
+							$indice_aux = $indice;	
+						}
+						$indice = $indice + 1;
+					}
+					if($encontrado){
+						$valores_estadistica_comparar_grafico .= explode(",", $valores_estadistica_comparar)[$indice_aux].",";
+					}else{
+						$valores_estadistica_comparar_grafico .= "0,";
+					}
+					
+					$encontrado=false;
+				}
 			}
 			array_push($estadisticas, $total."--Total");
 			
 			$valores_estadistica = substr($valores_estadistica,0,strlen($valores_estadistica)-1);
 			$elementos_estadistica = substr($elementos_estadistica,0,strlen($elementos_estadistica)-1);
-			/*$valores_estadistica .= $total;
-			$elementos_estadistica .= "'Total'";*/
-			
+			$valores_estadistica_comparar_grafico = substr($valores_estadistica_comparar_grafico,0,strlen($valores_estadistica_comparar_grafico)-1);
 		}
 		
-		/*
-		*	Incluir fechas en el front y obtener el grupo seleccionado en el back, y ya sacar las cantidades
-		*/
+		
 		$this->smarty->assign('request_uri', $_SERVER['REQUEST_URI']);
 		$this->smarty->assign('id_producto', $id_producto);
 		$this->smarty->assign('existe', $producto_existe);
+		$this->smarty->assign('comparar', $comparacion);
 		$this->smarty->assign('tipo_producto', $tipo_producto);
 		$this->smarty->assign('selector_producto', $selector_producto); // Array con el contenido del selector
 		$this->smarty->assign('texto_boton', $texto_boton);
 		$this->smarty->assign('estadisticas', $estadisticas);
 		$this->smarty->assign('valores_estadistica', $valores_estadistica);
 		$this->smarty->assign('elementos_estadistica', $elementos_estadistica);
+		$this->smarty->assign('estadisticas_comparar', $estadisticas_comparar);
+		$this->smarty->assign('valores_estadistica_comparar', $valores_estadistica_comparar);
+		$this->smarty->assign('valores_estadistica_comparar_grafico', $valores_estadistica_comparar_grafico);
+		$this->smarty->assign('elementos_estadistica_comparar', $elementos_estadistica_comparar);
 		$this->smarty->assign('estadisticas_calculadas', $estadisticas_calculadas);
 		$this->smarty->assign('fecha_fin', $fecha_fin);
 		$this->smarty->assign('fecha_inicio', $fecha_inicio);
+		$this->smarty->assign('fecha_inicio_comp', $fecha_inicio_comp);
+		$this->smarty->assign('fecha_fin_comp', $fecha_fin_comp);
 		$this->smarty->assign('debug', $debug);
 		return $this->display(__FILE__, 'views/templates/admin/minicskeleton.tpl');
 	}
@@ -333,30 +396,15 @@ o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND 
 			$atributos_del_grupo = substr($atributos_del_grupo,0,strlen($atributos_del_grupo)-1);
 			$array_attributos_del_grupo = explode("-", $atributos_del_grupo);
 			
-			/*echo '<script>';
-			echo 'console.log("Inicio:'.$sql.'");';
-			echo '</script>';
-			
-			foreach($array_attributos_del_grupo as $uno){
-				echo '<script>';
-				echo 'console.log("e : '.$uno.'");';
-				echo '</script>';
-			}
-				
-			echo '<script>';
-			echo 'console.log("Fin");';
-			echo '</script>';
-			*/
-			
 			/*
 			*	Ahora ejecutamos la consulta de Belen que devuelve una tupla cantidad-atributos de configuracion de un producto
 			*/
 				
 			$sql = "SELECT SUM(mp.quantity) AS cantidad, mp.attributes AS articulo 
-FROM ps_orders o, ps_megaproductcart mp 
-WHERE o.id_cart=mp.id_cart AND mp.id_product=".$id_product." AND o.current_state<>34 
-AND o.date_add>'".$fecha_inicio." 00:00:00' AND o.date_add<'".$fecha_fin." 23:59:59' 
-GROUP BY _splitear(mp.attributes,'-') ;";
+				FROM ps_orders o, ps_megaproductcart mp 
+				WHERE o.id_cart=mp.id_cart AND mp.id_product=".$id_product." AND o.current_state<>34 
+				AND o.date_add>'".$fecha_inicio." 00:00:00' AND o.date_add<'".$fecha_fin." 23:59:59' 
+				GROUP BY _splitear(mp.attributes,'-') ;";
 
 			//echo $sql;
 			
@@ -379,9 +427,6 @@ GROUP BY _splitear(mp.attributes,'-') ;";
 			*	Resultado es lo que se va a devolver, pero hay que eliminar los elementos que no contengan atributos del grupo del que queremos estadisticas
 			*/
 			
-			echo '<script>';
-			echo 'console.log("Llegamos a la seccion debug");';
-			echo '</script>'; 
 			
 			foreach($resultado as $elemento){ 
 				$aux = explode("--", $elemento)[1];
@@ -399,9 +444,6 @@ GROUP BY _splitear(mp.attributes,'-') ;";
 				}
 			}
 			
-			echo '<script>';
-			echo 'console.log("Salimos de la seccion debug");';
-			echo '</script>';
 			/*
 			*	Ahora tenemos que unificar las cantidades de las medidas
 			*/
