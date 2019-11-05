@@ -121,8 +121,8 @@ o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND 
 		$producto_existe = false;
 		$estadisticas_calculadas = false;
 		
-		$fecha_inicio = '2010-01-01';
-		$fecha_fin = '2030-01-01';
+		$fecha_inicio = strftime( "%Y-%m-%d", time());
+		$fecha_fin = strftime( "%Y-%m-%d", time());
 		
 		/*
 		*	Comprobamos si se han estipulado fechas
@@ -134,6 +134,14 @@ o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND 
 		
 		if(!empty(Tools::getValue('fechaFin'))){
 			$fecha_fin = Tools::getValue('fechaFin');
+		}
+		
+		$fecha_inicio_comp = strftime( "%Y-%m-%d", time());
+		$fecha_fin_comp = strftime( "%Y-%m-%d", time());
+		$comparacion = false;
+		
+		if(!empty(Tools::getValue('isCompare'))){
+			$comparacion = true;
 		}
 		
 		
@@ -207,15 +215,21 @@ o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND 
 		
 		$valores_estadistica = '';
 		$elementos_estadistica = '';
+		$total = 0;
 		if($estadisticas_calculadas){
 			foreach($estadisticas as $elemento){ 
 				$elemento_split = explode("--", $elemento);
 				$valores_estadistica .= $elemento_split[0].",";
 				$elementos_estadistica .= '"'.$elemento_split[1].'",';
+				$total = $total + (int)$elemento_split[0];
 			}
+			array_push($estadisticas, $total."--Total");
 			
 			$valores_estadistica = substr($valores_estadistica,0,strlen($valores_estadistica)-1);
 			$elementos_estadistica = substr($elementos_estadistica,0,strlen($elementos_estadistica)-1);
+			/*$valores_estadistica .= $total;
+			$elementos_estadistica .= "'Total'";*/
+			
 		}
 		
 		/*
