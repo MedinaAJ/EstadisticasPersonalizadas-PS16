@@ -121,6 +121,22 @@ o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND 
 		$producto_existe = false;
 		$estadisticas_calculadas = false;
 		
+		$fecha_inicio = '2010-01-01';
+		$fecha_fin = '2030-01-01';
+		
+		/*
+		*	Comprobamos si se han estipulado fechas
+		*/
+		
+		if(!empty(Tools::getValue('fechaInicio'))){
+			$fecha_inicio = Tools::getValue('fechaInicio');
+		}
+		
+		if(!empty(Tools::getValue('fechaFin'))){
+			$fecha_fin = Tools::getValue('fechaFin');
+		}
+		
+		
 		if(!empty(Tools::getValue('id'))){
 			$id_producto = (int)Tools::getValue('id');
 			
@@ -167,14 +183,14 @@ o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND 
 					$tipo_producto = "Megaproduct";
 					$selector_producto_string = $this->getMpSelector($id_producto);
 					$selector_producto = explode("_", $selector_producto_string);
-					$estadisticas = $this->isMegaproduct($id_producto);
+					$estadisticas = $this->isMegaproduct($id_producto, $fecha_inicio, $fecha_fin);
 					$texto_boton = 'Sacar Estadisticas';
 					$estadisticas_calculadas = true;
 				}else{
 					$tipo_producto = "Prestashop";
 					$selector_producto_string = $this->getPsSelector($id_producto);
 					$selector_producto = explode("_", $selector_producto_string);
-					$estadisticas = $this->isPrestashop($id_producto);
+					$estadisticas = $this->isPrestashop($id_producto, $fecha_inicio, $fecha_fin);
 					$texto_boton = 'Sacar Estadisticas';
 					$estadisticas_calculadas = true;
 				}
@@ -189,6 +205,19 @@ o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND 
 			}
 		}
 		
+		$valores_estadistica = '';
+		$elementos_estadistica = '';
+		if($estadisticas_calculadas){
+			foreach($estadisticas as $elemento){ 
+				$elemento_split = explode("--", $elemento);
+				$valores_estadistica .= $elemento_split[0].",";
+				$elementos_estadistica .= '"'.$elemento_split[1].'",';
+			}
+			
+			$valores_estadistica = substr($valores_estadistica,0,strlen($valores_estadistica)-1);
+			$elementos_estadistica = substr($elementos_estadistica,0,strlen($elementos_estadistica)-1);
+		}
+		
 		/*
 		*	Incluir fechas en el front y obtener el grupo seleccionado en el back, y ya sacar las cantidades
 		*/
@@ -199,7 +228,11 @@ o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND 
 		$this->smarty->assign('selector_producto', $selector_producto); // Array con el contenido del selector
 		$this->smarty->assign('texto_boton', $texto_boton);
 		$this->smarty->assign('estadisticas', $estadisticas);
+		$this->smarty->assign('valores_estadistica', $valores_estadistica);
+		$this->smarty->assign('elementos_estadistica', $elementos_estadistica);
 		$this->smarty->assign('estadisticas_calculadas', $estadisticas_calculadas);
+		$this->smarty->assign('fecha_fin', $fecha_fin);
+		$this->smarty->assign('fecha_inicio', $fecha_inicio);
 		$this->smarty->assign('debug', $debug);
 		return $this->display(__FILE__, 'views/templates/admin/minicskeleton.tpl');
 	}
@@ -256,7 +289,7 @@ o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND 
 		return $resultado;
 	}
 	
-	private function isMegaproduct($id_product){
+	private function isMegaproduct($id_product, $fecha_inicio, $fecha_fin){
 		echo '<script>';
 		echo 'console.log("ES MEGAPRODUCT");';
 		echo '</script>';
@@ -308,7 +341,7 @@ o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND 
 			$sql = "SELECT SUM(mp.quantity) AS cantidad, mp.attributes AS articulo 
 FROM ps_orders o, ps_megaproductcart mp 
 WHERE o.id_cart=mp.id_cart AND mp.id_product=".$id_product." AND o.current_state<>34 
-AND o.date_add>'2016-10-01 00:00:00' AND o.date_add<'2019-12-31 23:59:59' 
+AND o.date_add>'".$fecha_inicio." 00:00:00' AND o.date_add<'".$fecha_fin." 23:59:59' 
 GROUP BY _splitear(mp.attributes,'-') ;";
 
 			//echo $sql;
@@ -410,7 +443,7 @@ GROUP BY _splitear(mp.attributes,'-') ;";
 		return $resultado;
 	}
 	
-	private function isPrestashop($id_product){ 
+	private function isPrestashop($id_product, $fecha_inicio, $fecha_fin){ 
 		echo '<script>';
 		echo 'console.log("ES PRESTASHOP");';
 		echo '</script>';
@@ -419,7 +452,7 @@ GROUP BY _splitear(mp.attributes,'-') ;";
 		
 		if(!empty(Tools::getValue('id_atributo'))){
 			$id_atributo = Tools::getValue('id_atributo');
-			$sql = "SELECT SUM(product_quantity),pal.name FROM ps_order_detail od,ps_orders o,ps_product_attribute_combination ppc,ps_attribute_lang pal, ps_attribute pa  WHERE o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND pal.id_attribute=ppc.id_attribute AND pal.id_lang=1 AND pa.id_attribute_group = ".explode("-", $id_atributo)[1]." AND pa.id_attribute = pal.id_attribute AND current_state<>34 AND product_id=".$id_product." AND o.date_add>='2016-01-01 00:00:00' AND o.date_add<='2018-12-31 23:59:59' GROUP BY pal.name";
+			$sql = "SELECT SUM(product_quantity),pal.name FROM ps_order_detail od,ps_orders o,ps_product_attribute_combination ppc,ps_attribute_lang pal, ps_attribute pa  WHERE o.id_order=od.id_order AND ppc.id_product_attribute=od.product_attribute_id AND pal.id_attribute=ppc.id_attribute AND pal.id_lang=1 AND pa.id_attribute_group = ".explode("-", $id_atributo)[1]." AND pa.id_attribute = pal.id_attribute AND current_state<>34 AND product_id=".$id_product." AND o.date_add>='".$fecha_inicio." 00:00:00' AND o.date_add<='".$fecha_fin." 23:59:59' GROUP BY pal.name";
 			
 			echo '<script>';
 			echo 'console.log("SQL: '.$sql.'");';

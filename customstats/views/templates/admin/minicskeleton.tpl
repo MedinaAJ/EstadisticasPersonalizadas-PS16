@@ -1,9 +1,18 @@
+</br>
 <!-- minicskeleton admin page -->
-	</br>
-	<h2>Estadisticas Unificadas Para Productos de VentadeColchones.com</h2>
-	<h5>Diseñado por Alejandro Medina</h5>
+<link rel="stylesheet" type="text/css" href="https://ventadecolchones.com/modules/customstats/views/css/Chart.css">
+<script src="https://ventadecolchones.com/modules/customstats/views/js/Chart.js"></script>
+<div class="panel" style="border-radius: 17px; background: #ffff;">
+	<div class="panel-heading" style="border-bottom: solid 1px #585A69;">
+		<i class="icon-signal"></i>
+		<span style="font-size: 14px; text-transform: uppercase;">Estadisticas Unificadas Para Productos de VentadeColchones.com</span>
+	</div>
 	
 	<form method="POST" id="id_producto" action="{$request_uri}">
+		<p>Fechas inicio</p>
+		<input type="date" name="fechaInicio" value="{$fecha_inicio}"> 
+		<p>Fechas fin</p>
+		<input type="date" name="fechaFin" value="{$fecha_fin}"> 
 		<input type="submit" name="btnid" value="{$texto_boton}"> 
 		{if $id_producto == 0}
 			<p>ID Producto: <input id="id_product" type="number" name="id" required ></p>
@@ -19,7 +28,7 @@
 					{/foreach}
 				</select>
 				{if $estadisticas_calculadas == 1}	
-					<div class="chart-wrap horizontal"> <!-- quitar el estilo "horizontal" para visualizar verticalmente -->
+					{*<div class="chart-wrap horizontal"> <!-- quitar el estilo "horizontal" para visualizar verticalmente -->
 					  <div class="title">Grafico con estadisticas del producto ID: {$id_producto} y atributo: {$atributo}</div>
 					 
 					  <div class="grid" style="margin-left: 330px;">
@@ -33,7 +42,7 @@
 						  {/foreach}
 					  </div>
 					</div>
-					
+					*}
 					<table class="table table-striped">
 					  <thead>
 						<tr>
@@ -49,24 +58,6 @@
 									<td>{$elemento_split[1]}</td>
 								</tr>
 						  {/foreach}
-						{*<tr>
-						  <th scope="row">1</th>
-						  <td>Mark</td>
-						  <td>Otto</td>
-						  <td>@mdo</td>
-						</tr>
-						<tr>
-						  <th scope="row">2</th>
-						  <td>Jacob</td>
-						  <td>Thornton</td>
-						  <td>@fat</td>
-						</tr>
-						<tr>
-						  <th scope="row">3</th>
-						  <td>Larry</td>
-						  <td>the Bird</td>
-						  <td>@twitter</td>
-						</tr> *}
 					  </tbody>
 					</table>
 					
@@ -76,13 +67,84 @@
 			{/if}
 		{/if}
 		
-		
+		<h5>Diseñado por Alejandro Medina</h5>
 	</form>
+</div>
+	{if $estadisticas_calculadas == 1}	
+		<canvas id="densityChart" width="600" height="400"></canvas>
+	{/if}
+	
 	
 	<p>DEBUG: {$debug}</p>
+	
+
+
+{if $estadisticas_calculadas == 1}	
+
+	<script>
+
+	var densityCanvas = document.getElementById("densityChart");
+
+	Chart.defaults.global.defaultFontFamily = "Lato";
+	Chart.defaults.global.defaultFontSize = 18;
+
+	var densityData = {
+	  label: 'Unidades vendidas',
+	  data: [{$valores_estadistica}],
+	  backgroundColor: [
+		'rgba(255, 96, 68, 1)',
+		'rgba(255, 96, 68, 1)',
+		'rgba(255, 96, 68, 1)',
+		'rgba(255, 96, 68, 1)',
+		'rgba(255, 96, 68, 1)',
+		'rgba(255, 96, 68, 1)',
+		'rgba(255, 96, 68, 1)',
+		'rgba(255, 96, 68, 1)',
+		'rgba(255, 96, 68, 1)'
+	  ],
+	  borderColor: [
+		'rgba(0, 99, 132, 1)',
+		'rgba(30, 99, 132, 1)',
+		'rgba(60, 99, 132, 1)',
+		'rgba(90, 99, 132, 1)',
+		'rgba(120, 99, 132, 1)',
+		'rgba(150, 99, 132, 1)',
+		'rgba(180, 99, 132, 1)',
+		'rgba(210, 99, 132, 1)',
+		'rgba(240, 99, 132, 1)'
+	  ],
+	  borderWidth: 2,
+	  hoverBorderWidth: 0
+	};
+
+	var chartOptions = {
+	  scales: {
+		yAxes: [{
+		  barPercentage: 0.5
+		}]
+	  },
+	  elements: {
+		rectangle: {
+		  borderSkipped: 'left',
+		}
+	  }
+	};
+
+	var barChart = new Chart(densityCanvas, {
+	  type: 'horizontalBar',
+	  data: {
+		labels: [{$elementos_estadistica}],
+		datasets: [densityData],
+	  },
+	  options: chartOptions
+	});
+
+	</script>
+
+{/if}
 
 <!-- end minicskeleton admin page -->
-
+{*
 <style>
     .chart-wrap {
         --chart-width:420px;
@@ -167,4 +229,4 @@
         white-space:nowrap;
     }
  
-</style>
+</style>*}
